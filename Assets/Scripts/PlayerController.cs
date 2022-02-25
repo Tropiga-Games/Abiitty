@@ -17,9 +17,14 @@ public class PlayerController : MonoBehaviour
     private Rigidbody2D _rigidBody;
     [SerializeField] private Vector2 _moveDirection;
     private Direction _facingDirection = Direction.RIGHT;
-    private bool locked = false;
+    public bool actionLock = false;
+    public bool idleLock = false;
+    public bool secondStrikeLock = true;
     const string PLAYER_AXE_IDLE_R = "PlayerAxeIdleRight";
     const string PLAYER_AXE_WALK_R = "PlayerAxeWalkRight";
+    const string PLAYER_AXE_L1_R = "PlayerAxeL1Right";
+    const string PLAYER_AXE_L2_R = "PlayerAxeL2Right";
+    const string PLAYER_AXE_L1Recovery_R = "PlayerAxeL1Recovery";
     public char directionChar;
     private Animator animator;
     public string currentState;
@@ -33,10 +38,9 @@ public class PlayerController : MonoBehaviour
         animator = _body.GetComponent<Animator>();
         spriteRenderer = _body.GetComponent<SpriteRenderer>();
     }
-
-    void FixedUpdate()
+    private void Update()
     {
-        if (!locked)
+        if (!actionLock)
         {
             _moveDirection = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
             if (_moveDirection.x > 0)
@@ -49,12 +53,30 @@ public class PlayerController : MonoBehaviour
                 _facingDirection = _curDirection;
             }
             if (_moveDirection != Vector2.zero) //se houver input movimento
+            {
                 ChangeAnimationState(PLAYER_AXE_WALK_R);
+                secondStrikeLock = true;
+                idleLock = false;
+            }
             else
             {
-                ChangeAnimationState(PLAYER_AXE_IDLE_R);
+                if (!idleLock)
+                    ChangeAnimationState(PLAYER_AXE_IDLE_R);
+                else
+                    ChangeAnimationState(PLAYER_AXE_L1Recovery_R);
+            }
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                if(secondStrikeLock)
+                    ChangeAnimationState(PLAYER_AXE_L1_R);
+                else
+                    ChangeAnimationState(PLAYER_AXE_L2_R);
+                _moveDirection = Vector2.zero;
             }
         }
+    }
+    void FixedUpdate()
+    {
         _rigidBody.MovePosition(_rigidBody.position + _moveDirection * moveSpeed * Time.deltaTime);
     }
     void ChangeAnimationState(string newState)
