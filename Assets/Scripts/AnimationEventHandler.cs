@@ -29,4 +29,20 @@ public class AnimationEventHandler : MonoBehaviour
     {
         playerController.secondStrikeLock = false;
     }
+    public void LockFirstStrike()
+    {
+        playerController.firstStrikeLock = true;
+    }
+    public void UnlockFirstStrike()
+    {
+        playerController.firstStrikeLock = false;
+    }
+    public void LockDirection()
+    {
+        playerController.directionLock = true;
+    }
+    public void UnlockDirection()
+    {
+        playerController.directionLock = false;
+    }
 }

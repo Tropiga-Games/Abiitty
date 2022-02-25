@@ -20,6 +20,10 @@ public class PlayerController : MonoBehaviour
     public bool actionLock = false;
     public bool idleLock = false;
     public bool secondStrikeLock = true;
+    public bool firstStrikeLock = false;
+    public bool firstStrikeQueued = false;
+    public bool secondStrikeQueued = false;
+    public bool directionLock = false;
     const string PLAYER_AXE_IDLE_R = "PlayerAxeIdleRight";
     const string PLAYER_AXE_WALK_R = "PlayerAxeWalkRight";
     const string PLAYER_AXE_L1_R = "PlayerAxeL1Right";
@@ -32,6 +36,13 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Direction _curDirection;
     [SerializeField] private float moveSpeed;
 
+    private Vector2 endPosition;
+    private Vector2 startPosition;
+    public float lerpSpeed;
+    public float lerpDuration;
+    private float elapsedTime;
+    [SerializeField] private Vector2 facingDirection2 = new Vector2(1, 0);
+
     private void Awake()
     {
         _rigidBody = GetComponent<Rigidbody2D>();
@@ -40,17 +51,40 @@ public class PlayerController : MonoBehaviour
     }
     private void Update()
     {
-        if (!actionLock)
+
+        if (!directionLock)
         {
             _moveDirection = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical")).normalized;
             if (_moveDirection.x > 0)
+            {
                 _curDirection = Direction.RIGHT;
+                facingDirection2 = new Vector2(1,0);
+            }
             if (_moveDirection.x < 0)
+            {
                 _curDirection = Direction.LEFT;
+                facingDirection2 = new Vector2(-1, 0);
+            }
             if (_curDirection != _facingDirection)
             {
                 transform.localScale = new Vector3(-transform.localScale.x, transform.localScale.y, transform.localScale.z);
                 _facingDirection = _curDirection;
+            }
+        }
+        if (!actionLock)
+        {
+            if (firstStrikeQueued)
+            {
+                ChangeAnimationState(PLAYER_AXE_L1_R);
+                firstStrikeQueued = false;
+                return;
+            }
+
+            if(secondStrikeQueued)
+            { 
+                ChangeAnimationState(PLAYER_AXE_L2_R);
+                secondStrikeQueued = false;
+                return;
             }
             if (_moveDirection != Vector2.zero) //se houver input movimento
             {
@@ -71,13 +105,32 @@ public class PlayerController : MonoBehaviour
                     ChangeAnimationState(PLAYER_AXE_L1_R);
                 else
                     ChangeAnimationState(PLAYER_AXE_L2_R);
+            }
+        }
+        else
+        {
+            if (Input.GetKeyDown(KeyCode.Mouse0))
+            {
+                if (!secondStrikeLock)
+                    secondStrikeQueued = true;
+                if(!firstStrikeLock)
+                    firstStrikeQueued = true;
                 _moveDirection = Vector2.zero;
             }
         }
     }
     void FixedUpdate()
     {
-        _rigidBody.MovePosition(_rigidBody.position + _moveDirection * moveSpeed * Time.deltaTime);
+        if(!actionLock)
+            _rigidBody.MovePosition(_rigidBody.position + _moveDirection * moveSpeed * Time.deltaTime);
+        if (directionLock)
+        {
+            startPosition = transform.position;
+            endPosition = startPosition += facingDirection2 * lerpSpeed;
+            elapsedTime += Time.deltaTime;
+            float percentageComplete = elapsedTime / lerpDuration;
+            transform.position = Vector3.Lerp(startPosition, endPosition, percentageComplete);
+        }
     }
     void ChangeAnimationState(string newState)
     {
